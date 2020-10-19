@@ -1,0 +1,90 @@
+# Pull request workflow
+
+name: pull-request
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  license:
+    runs-on: ubuntu-latest
+    name: License Check
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Setup Go environment
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+      
+      - name: Install addlicense
+        run: go get -u github.com/google/addlicense
+      
+      - name: Check licenses
+        run: addlicense -check .
+  lint:
+    name: Lint Code Base
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # Full git history is needed to get a proper list of changed files within `super-linter`
+          fetch-depth: 0
+
+      - name: Lint Code Base
+        uses: github/super-linter@v3
+        env:
+          VALIDATE_ALL_CODEBASE: false
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  go-build:
+    runs-on: ubuntu-latest
+    name: Go Build
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Go environment
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+
+      - name: Build Go source
+        run: go build -v ./...
+
+  go-vet:
+    runs-on: ubuntu-latest
+    name: Go Vet
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Go environment
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+    
+      - run: go vet ./...
+
+  go-test:
+    runs-on: ubuntu-latest
+    name: Go Test
+    needs: [go-build]
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Setup Go environment
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+      
+      - name: Unit Tests w/ Coverage
+        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+      
+      - name: Upload Coverage Report
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: bash <(curl -s https://codecov.io/bash)
+  
