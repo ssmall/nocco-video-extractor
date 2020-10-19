@@ -1,5 +1,7 @@
 # NOCCO Video Extractor
 
+[![GitHub Super-Linter](https://github.com/ssmall/nocco-video-extractor/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
+
 This is a Golang microservice used to extract segments from video files
 and upload the results to Google Drive.
 
