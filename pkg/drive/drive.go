@@ -17,17 +17,17 @@ package drive
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
 
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 )
 
-// DriveClient provides an interface to fetch files from Google Drive
-type DriveClient interface {
+// Client provides an interface to fetch files from Google Drive
+type Client interface {
 	// GetFileContents gets the contents of the file with the given id
 	GetFileContents(ctx context.Context, id string) (io.ReadCloser, error)
 }
@@ -54,13 +54,13 @@ func getClient(ctx context.Context, user string) (*http.Client, error) {
 }
 
 // NewClient creates a new DriveClient that impersonates the given user
-func NewClient(ctx context.Context, user string) (DriveClient, error) {
+func NewClient(ctx context.Context, user string) (Client, error) {
 	c, err := getClient(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
-	srv, err := drive.New(c)
+	srv, err := drive.NewService(ctx, option.WithHTTPClient(c))
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +71,6 @@ func (c *driveClient) GetFileContents(ctx context.Context, id string) (io.ReadCl
 	r, err := c.srv.Files.Get(id).Context(ctx).Download()
 	if err != nil {
 		return nil, err
-	}
-	if r.StatusCode >= 300 {
-		return nil, fmt.Errorf("unexpected response: %s", r.Status)
 	}
 	log.Printf("<--- %s %s, ContentLength: %d bytes", r.Status, r.Request.URL, r.ContentLength)
 	return r.Body, nil
