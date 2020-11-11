@@ -30,6 +30,9 @@ import (
 type Client interface {
 	// GetFileContents gets the contents of the file with the given id
 	GetFileContents(ctx context.Context, id string) (io.ReadCloser, error)
+
+	// UploadFile uploads a file with the given name and contents to the specified folder
+	UploadFile(ctx context.Context, name, folder string, contents io.Reader) error
 }
 
 type driveClient struct {
@@ -74,4 +77,16 @@ func (c *driveClient) GetFileContents(ctx context.Context, id string) (io.ReadCl
 	}
 	log.Printf("<--- %s %s, ContentLength: %d bytes", r.Status, r.Request.URL, r.ContentLength)
 	return r.Body, nil
+}
+
+func (c *driveClient) UploadFile(ctx context.Context, name, folder string, contents io.Reader) error {
+	f, err := c.srv.Files.Create(&drive.File{
+		Name:    name,
+		Parents: []string{folder},
+	}).SupportsAllDrives(true).Context(ctx).Media(contents).Do()
+	if err != nil {
+		return err
+	}
+	log.Printf("File uploaded as %q (id: %s) to folder %q", f.Name, f.Id, folder)
+	return nil
 }
