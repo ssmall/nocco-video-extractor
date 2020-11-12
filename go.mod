@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go v0.69.1 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/google/go-cmp v0.5.2
+	github.com/gorilla/mux v1.8.0
 	golang.org/x/net v0.0.0-20201016165138-7b1cca2348c0 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	golang.org/x/sys v0.0.0-20201018230417-eeed37f84f13 // indirect

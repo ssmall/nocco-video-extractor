@@ -14,8 +14,79 @@
 
 package main
 
-import "fmt"
+import (
+	"context"
+	"flag"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"strconv"
+	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/ssmall/nocco-video-extractor/pkg/drive"
+	noccohttp "github.com/ssmall/nocco-video-extractor/pkg/http"
+	"github.com/ssmall/nocco-video-extractor/pkg/video"
+)
+
+const defaultPort = 8080
+const terminationWait = 10 * time.Second
+
+var driveUser = flag.String("user", "", "The Google Driver user to impersonate for file operations")
 
 func main() {
-	fmt.Println("Hello, world!")
+	flag.Parse()
+
+	if *driveUser == "" {
+		log.Fatalln("flag -user is required")
+	}
+
+	var port int
+	if s, ok := os.LookupEnv("PORT"); ok {
+		p, err := strconv.Atoi(s)
+		if err != nil {
+			log.Fatalf("Expected integer value for PORT but got %q: %v", s, err)
+		}
+		port = p
+	} else {
+		port = defaultPort
+	}
+
+	ctx := context.Background()
+
+	d, err := drive.NewClient(ctx, *driveUser)
+
+	if err != nil {
+		log.Fatalln("Error initializing Google Drive client:", err)
+	}
+
+	r := mux.NewRouter()
+	r.Handle("/extract", noccohttp.ClipExtractionHandler(d, video.NewExtractor()))
+
+	log.Println("Starting server on port", port)
+	srv := &http.Server{
+		Addr:         "0.0.0.0:" + strconv.Itoa(port),
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+		Handler:      r,
+	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
+	<-c
+
+	ctx, cancel := context.WithTimeout(context.Background(), terminationWait)
+	defer cancel()
+	srv.Shutdown(ctx)
+	log.Println("Shutting down")
+	os.Exit(0)
 }
