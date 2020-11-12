@@ -17,22 +17,26 @@ package drive
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 )
 
 // Client provides an interface to fetch files from Google Drive
 type Client interface {
-	// GetFileContents gets the contents of the file with the given id
-	GetFileContents(ctx context.Context, id string) (io.ReadCloser, error)
+	// GetFile gets the file with the given id.
+	// Return values are: the name of the file, the contents of the file, and any errors that occurred.
+	GetFile(ctx context.Context, id string) (string, io.ReadCloser, error)
 
-	// UploadFile uploads a file with the given name and contents to the specified folder
-	UploadFile(ctx context.Context, name, folder string, contents io.Reader) error
+	// UploadFile uploads a file with the given name and contents to the specified folder.
+	// Returns the URL of the uploaded file.
+	UploadFile(ctx context.Context, name, folder string, contents io.Reader) (string, error)
 }
 
 type driveClient struct {
@@ -56,8 +60,7 @@ func getClient(ctx context.Context, user string) (*http.Client, error) {
 	return config.Client(ctx), nil
 }
 
-// NewClient creates a new DriveClient that impersonates the given user
-func NewClient(ctx context.Context, user string) (Client, error) {
+func getDriveService(ctx context.Context, user string) (*drive.Service, error) {
 	c, err := getClient(ctx, user)
 	if err != nil {
 		return nil, err
@@ -67,26 +70,40 @@ func NewClient(ctx context.Context, user string) (Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &driveClient{srv}, nil
+	return srv, nil
 }
 
-func (c *driveClient) GetFileContents(ctx context.Context, id string) (io.ReadCloser, error) {
-	r, err := c.srv.Files.Get(id).Context(ctx).Download()
+// NewClient creates a new DriveClient that impersonates the given user
+func NewClient(ctx context.Context, user string) (Client, error) {
+	srv, err := getDriveService(ctx, user)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("<--- %s %s, ContentLength: %d bytes", r.Status, r.Request.URL, r.ContentLength)
-	return r.Body, nil
+	return &driveClient{srv}, nil
 }
 
-func (c *driveClient) UploadFile(ctx context.Context, name, folder string, contents io.Reader) error {
+func (c *driveClient) GetFile(ctx context.Context, id string) (string, io.ReadCloser, error) {
+	f, err := c.srv.Files.Get(id).Context(ctx).Fields(googleapi.Field("name")).Do()
+	if err != nil {
+		return "", nil, fmt.Errorf("error getting filename: %w", err)
+	}
+	log.Printf("File %s has name %q", id, f.Name)
+	r, err := c.srv.Files.Get(id).Context(ctx).Download()
+	if err != nil {
+		return "", nil, err
+	}
+	log.Printf("<--- %s %s, ContentLength: %d bytes", r.Status, r.Request.URL, r.ContentLength)
+	return f.Name, r.Body, nil
+}
+
+func (c *driveClient) UploadFile(ctx context.Context, name, folder string, contents io.Reader) (string, error) {
 	f, err := c.srv.Files.Create(&drive.File{
 		Name:    name,
 		Parents: []string{folder},
-	}).SupportsAllDrives(true).Context(ctx).Media(contents).Do()
+	}).SupportsAllDrives(true).Context(ctx).Media(contents).Fields("name", "id", "webViewLink").Do()
 	if err != nil {
-		return err
+		return "", err
 	}
 	log.Printf("File uploaded as %q (id: %s) to folder %q", f.Name, f.Id, folder)
-	return nil
+	return f.WebViewLink, nil
 }
