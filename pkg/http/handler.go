@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -44,6 +45,8 @@ func ClipExtractionHandler(d drive.Client, e video.Extractor) http.HandlerFunc {
 			return
 		}
 
+		log.Printf("Request %s[%s,%s] -> %s", body.SourceFileID, body.ClipStartTime, body.ClipEndTime, body.DestinationFolderID)
+
 		start, err := parseDuration(body.ClipStartTime)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -66,7 +69,7 @@ func ClipExtractionHandler(d drive.Client, e video.Extractor) http.HandlerFunc {
 		}
 		defer contents.Close()
 
-		f, err := os.Create(path.Join(os.TempDir(), filename))
+		f, err := ioutil.TempFile(os.TempDir(), "download-*"+path.Ext(filename))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
@@ -74,14 +77,22 @@ func ClipExtractionHandler(d drive.Client, e video.Extractor) http.HandlerFunc {
 		}
 
 		defer f.Close()
-		defer os.Remove(f.Name())
+		defer func() {
+			if err := os.Remove(f.Name()); err != nil {
+				log.Printf("Error deleting file %s: %v", f.Name(), err)
+			} else {
+				log.Println("Deleted", f.Name())
+			}
+		}()
 
+		log.Printf("Downloading %q to %s", filename, f.Name())
 		_, err = io.Copy(f, contents)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
+		log.Printf("Finished downloading %q to %s", filename, f.Name())
 
 		transcode, err := e.Clip(r.Context(), f.Name(), start, end)
 		if err != nil {

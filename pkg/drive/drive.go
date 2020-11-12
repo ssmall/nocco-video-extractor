@@ -83,12 +83,12 @@ func NewClient(ctx context.Context, user string) (Client, error) {
 }
 
 func (c *driveClient) GetFile(ctx context.Context, id string) (string, io.ReadCloser, error) {
-	f, err := c.srv.Files.Get(id).Context(ctx).Fields(googleapi.Field("name")).Do()
+	f, err := c.srv.Files.Get(id).SupportsAllDrives(true).Context(ctx).Fields(googleapi.Field("name")).Do()
 	if err != nil {
 		return "", nil, fmt.Errorf("error getting filename: %w", err)
 	}
 	log.Printf("File %s has name %q", id, f.Name)
-	r, err := c.srv.Files.Get(id).Context(ctx).Download()
+	r, err := c.srv.Files.Get(id).SupportsAllDrives(true).Context(ctx).Download()
 	if err != nil {
 		return "", nil, err
 	}

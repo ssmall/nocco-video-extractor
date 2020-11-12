@@ -179,11 +179,11 @@ func TestHandler_HappyPath(t *testing.T) {
 		t.Errorf("got GetFile(context, %q), want GetFile(context, %q) ", drive.getFileID, "sourceFileId")
 	}
 
-	clipBase := filepath.Base(extractor.clipFilename)
+	clipExt := filepath.Ext(extractor.clipFilename)
 	expectedStart := 1*time.Minute + 23*time.Second
 	expectedEnd := 2*time.Minute + 34*time.Second
-	if clipBase != drive.filename || extractor.clipStart != expectedStart || extractor.clipEnd != expectedEnd {
-		t.Errorf("got Clip(context, %q, %s, %s), want Clip(context, %q, %s, %s)", clipBase, extractor.clipStart, extractor.clipEnd, drive.filename, expectedStart, expectedEnd)
+	if clipExt != filepath.Ext(drive.filename) || extractor.clipStart != expectedStart || extractor.clipEnd != expectedEnd {
+		t.Errorf("got Clip(context, <filename>%s, %s, %s), want Clip(context, <filename>%s, %s, %s)", clipExt, extractor.clipStart, extractor.clipEnd, filepath.Ext(drive.filename), expectedStart, expectedEnd)
 	}
 
 	expectedUploadName := "originalFile_00:01:23_to_00:02:34.fileExt"
