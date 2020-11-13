@@ -27,15 +27,15 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and Push
     steps:
-      - uses: actions/checkout@v2
-      
-      - name: Cache Docker layers
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      -  name: Cache Docker layers
         uses: actions/cache@v2
         with:
-          path: /tmp/.docker-cache
-          key: ${{ runner.os }}-docker-${{ github.sha }}
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-docker-
+            ${{ runner.os }}-buildx-
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v1.1.1
@@ -46,5 +46,5 @@ jobs:
           repository: ssmall/nocco-video-extractor/nocco-video-extractor
           tag_with_sha: true
           push: ${{ github.ref == 'refs/heads/main' }}
-          cache-from: type=local,src=/tmp/.docker-cache
-          cache-to: type=local,dest=/tmp/.docker-cache
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
