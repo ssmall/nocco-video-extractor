@@ -22,7 +22,7 @@ RUN go build -v -o /build/app ./cmd/main.go
 
 FROM debian:buster-slim
 
-RUN apt update && apt install -y ffmpeg
+RUN apt-get update && apt-get install -y ffmpeg
 
 WORKDIR /app
 COPY --from=builder /build/app .
