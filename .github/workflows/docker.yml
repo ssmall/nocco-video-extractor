@@ -1,0 +1,26 @@
+# This is a workflow to build and publish Docker artifacts
+
+name: Docker
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v1.1.1
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: docker.pkg.github.com
+          repository: ssmall/nocco-video-extractor/nocco-video-extractor
+          tag_with_sha: true
+          push: ${{ github.ref == 'refs/heads/main' }}
