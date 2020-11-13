@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"io/ioutil"
-	"os"
 	"regexp"
 	"testing"
 
@@ -28,14 +27,14 @@ import (
 	"google.golang.org/api/drive/v3"
 )
 
-func uploadTestFile(t *testing.T, user string) (id, name, contents string) {
+func uploadTestFile(t *testing.T) (id, name, contents string) {
 	t.Helper()
 
 	name = t.Name()
 	contents = "this is an integration test file for " + t.Name()
 
 	ctx := context.Background()
-	srv, err := getDriveService(ctx, user)
+	srv, err := getDriveService(ctx)
 
 	if err != nil {
 		t.Fatal(err)
@@ -55,11 +54,11 @@ func uploadTestFile(t *testing.T, user string) (id, name, contents string) {
 	return
 }
 
-func createTestFolder(t *testing.T, user string) string {
+func createTestFolder(t *testing.T) string {
 	t.Helper()
 
 	ctx := context.Background()
-	srv, err := getDriveService(ctx, user)
+	srv, err := getDriveService(ctx)
 
 	if err != nil {
 		t.Fatal(err)
@@ -95,18 +94,12 @@ func fileIDFromURL(t *testing.T, url string) string {
 
 // This test has the following external dependencies:
 // - the GOOGLE_APPLICATION_CREDENTIALS environment variable must be set and must reference credentials that can be used for read/write on Google Drive
-// - the TEST_USER environment variable must be set to the email address of a valid user in the GSuite organization
 func TestGetFile(t *testing.T) {
-	user, ok := os.LookupEnv("TEST_USER")
-	if !ok {
-
-		t.Fatal("Expected environment variable TEST_USER to be set")
-	}
-	id, name, contents := uploadTestFile(t, user)
+	id, name, contents := uploadTestFile(t)
 
 	ctx := context.Background()
 
-	c, err := NewClient(ctx, user)
+	c, err := NewClient(ctx)
 
 	if err != nil {
 		t.Fatal(err)
@@ -137,19 +130,12 @@ func TestGetFile(t *testing.T) {
 
 // This test has the following external dependencies:
 // - the GOOGLE_APPLICATION_CREDENTIALS environment variable must be set and must reference credentials that can be used for read/write on Google Drive
-// - the TEST_USER environment variable must be set to the email address of a valid user in the GSuite organization
 func TestUploadFile(t *testing.T) {
-	user, ok := os.LookupEnv("TEST_USER")
-	if !ok {
-
-		t.Fatal("Expected environment variable TEST_USER to be set")
-	}
-
-	folderID := createTestFolder(t, user)
+	folderID := createTestFolder(t)
 
 	ctx := context.Background()
 
-	c, err := NewClient(ctx, user)
+	c, err := NewClient(ctx)
 
 	if err != nil {
 		t.Fatal(err)

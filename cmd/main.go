@@ -33,14 +33,6 @@ const defaultPort = 8080
 const terminationWait = 10 * time.Second
 
 func main() {
-	var driveUser string
-	if s, ok := os.LookupEnv("DRIVE_USER"); ok {
-		driveUser = s
-	} else {
-		log.Fatalln("Google Drive user must be specified via environment variable DRIVE_USER")
-	}
-	log.Printf("Impersonating user %q", driveUser)
-
 	var port int
 	if s, ok := os.LookupEnv("PORT"); ok {
 		p, err := strconv.Atoi(s)
@@ -54,7 +46,7 @@ func main() {
 
 	ctx := context.Background()
 
-	d, err := drive.NewClient(ctx, driveUser)
+	d, err := drive.NewClient(ctx)
 
 	if err != nil {
 		log.Fatalln("Error initializing Google Drive client:", err)
