@@ -43,25 +43,17 @@ type driveClient struct {
 	srv *drive.Service
 }
 
-func getClient(ctx context.Context, user string) (*http.Client, error) {
-	creds, err := google.FindDefaultCredentials(ctx, drive.DriveScope)
+func getClient(ctx context.Context) (*http.Client, error) {
+	client, err := google.DefaultClient(ctx, drive.DriveScope)
 
 	if err != nil {
 		return nil, err
 	}
-
-	config, err := google.JWTConfigFromJSON(creds.JSON, drive.DriveScope)
-	if err != nil {
-		return nil, err
-	}
-
-	config.Subject = user
-
-	return config.Client(ctx), nil
+	return client, nil
 }
 
-func getDriveService(ctx context.Context, user string) (*drive.Service, error) {
-	c, err := getClient(ctx, user)
+func getDriveService(ctx context.Context) (*drive.Service, error) {
+	c, err := getClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -73,9 +65,9 @@ func getDriveService(ctx context.Context, user string) (*drive.Service, error) {
 	return srv, nil
 }
 
-// NewClient creates a new DriveClient that impersonates the given user
-func NewClient(ctx context.Context, user string) (Client, error) {
-	srv, err := getDriveService(ctx, user)
+// NewClient creates a new DriveClient
+func NewClient(ctx context.Context) (Client, error) {
+	srv, err := getDriveService(ctx)
 	if err != nil {
 		return nil, err
 	}
