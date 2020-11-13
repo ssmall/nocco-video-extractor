@@ -22,8 +22,9 @@ RUN go build -v -o /build/app ./cmd/main.go
 
 FROM debian:buster-slim
 
-RUN apt update && apt install -y ffmpeg
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg=7:4.1.6-1~deb10u1 && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY --from=builder /build/app .
-CMD ["./app"]
+
+ENTRYPOINT [ "./app" ]
