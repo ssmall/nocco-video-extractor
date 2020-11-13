@@ -36,6 +36,8 @@ jobs:
           key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-
+      - name: Checkout repository
+        uses: actions/checkout@v2
       - name: Build and push Docker images
         uses: docker/build-push-action@v1.1.1
         with:
