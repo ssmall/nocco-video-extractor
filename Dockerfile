@@ -26,4 +26,5 @@ RUN apt update && apt install -y ffmpeg
 
 WORKDIR /app
 COPY --from=builder /build/app .
-CMD ["./app"]
+
+ENTRYPOINT [ "./app" ]
