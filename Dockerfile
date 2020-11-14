@@ -22,7 +22,12 @@ RUN go build -v -o /build/app ./cmd/main.go
 
 FROM debian:buster-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg=7:4.1.6-1~deb10u1 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      ffmpeg=7:4.1.6-1~deb10u1 \
+      openssl=1.1.1d-0+deb10u3 \
+      ca-certificates=20200601~deb10u1 && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY --from=builder /build/app .
