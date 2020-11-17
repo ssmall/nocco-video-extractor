@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -32,7 +33,16 @@ import (
 const defaultPort = 8080
 const terminationWait = 10 * time.Second
 
+var readTimeout = flag.Duration("readtimeout", 15*time.Second, "Sets the read timeout for incoming HTTP requests")
+var writeTimeout = flag.Duration("writetimeout", 15*time.Second, "Sets the write timeout for HTTP responses")
+var idleTimeout = flag.Duration("idletimeout", 60*time.Second, "Sets the idle timeout for HTTP keepalive")
+
 func main() {
+	flag.Parse()
+	log.Println("Read timeout is:", readTimeout)
+	log.Println("Write timeout is:", writeTimeout)
+	log.Println("Idle timeout is:", idleTimeout)
+
 	var port int
 	if s, ok := os.LookupEnv("PORT"); ok {
 		p, err := strconv.Atoi(s)
@@ -58,9 +68,9 @@ func main() {
 	log.Println("Starting server on port", port)
 	srv := &http.Server{
 		Addr:         "0.0.0.0:" + strconv.Itoa(port),
-		WriteTimeout: time.Second * 15,
-		ReadTimeout:  time.Second * 15,
-		IdleTimeout:  time.Second * 60,
+		WriteTimeout: *writeTimeout,
+		ReadTimeout:  *readTimeout,
+		IdleTimeout:  *idleTimeout,
 		Handler:      r,
 	}
 
